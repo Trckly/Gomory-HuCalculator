@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gomory-HuCalculator", "Gomory-HuCalculator\Gomory-HuCalculator.csproj", "{4D56B138-B346-46C8-AF57-894937927B0F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GomoryHuCalculator", "GomoryHuCalculator\GomoryHuCalculator.csproj", "{4D56B138-B346-46C8-AF57-894937927B0F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
