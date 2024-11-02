@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Gomory_HuCalculator.GomoryHu;
 
 namespace Gomory_HuCalculator;
 
@@ -20,9 +21,10 @@ public partial class MainWindow : Window
     
     public MainWindow()
     {
-        NodeCount = 8;
+        NodeCount = 7;
         
         InitializeComponent();
+        GenerateWeightMatrixGrid();
         PreDefineGraph();
     }
     
@@ -45,7 +47,7 @@ public partial class MainWindow : Window
         {
             var rowHeaders = new TextBlock
             {
-                Text = ((char)('A' + i - 1)).ToString(),
+                Text = ((char)('a' + i - 1)).ToString(),
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Center
             };
@@ -55,7 +57,7 @@ public partial class MainWindow : Window
             
             var columnHeaders = new TextBlock
             {
-                Text = ((char)('A' + i - 1)).ToString(),
+                Text = ((char)('a' + i - 1)).ToString(),
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Center
             };
@@ -118,6 +120,9 @@ public partial class MainWindow : Window
                 weightMatrix[i - 1, j - 1] = int.Parse(cell?.Text ?? string.Empty);
             }
         }
+
+        var gomoryHuAlgorithm = new GomoryHuAlgorithm(weightMatrix);
+        gomoryHuAlgorithm.Solve();
     }
     
     private void PreDefineGraph()
