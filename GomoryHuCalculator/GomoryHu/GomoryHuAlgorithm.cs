@@ -61,6 +61,7 @@ public class GomoryHuAlgorithm
         var minFlowValue = int.MaxValue;
         List <int> minNodeList = [];
         var nodeList = new List<int>{s};
+        var tempNodeList = nodeList; // This list hold initial node list before ChangeNodeForCut
         var last = false;
         do
         {
@@ -71,9 +72,9 @@ public class GomoryHuAlgorithm
                 minNodeList = nodeList.ToList();
             }
 
-            if (ChangeNodeForCut(nodeList, allNodeCount, t) == allNodeCount)
+            if (ChangeNodeForCut(nodeList, allNodeCount, t) == -1)
             {
-                last = AddNodeForCut(nodeList, allNodeCount, t);
+                last = AddNodeForCut(ref nodeList, allNodeCount, t, ref tempNodeList);
             }
         } while(nodeList.Count <= allNodeCount - 1 && !last);
 
@@ -129,23 +130,73 @@ public class GomoryHuAlgorithm
         return sum;
     }
 
+    // private static int ChangeNodeForCut(List<int> nodeList, int allNodeCount, int t)
+    // {
+    //     if (nodeList.Count < 2) return allNodeCount;
+    //
+    //     for (var i = nodeList.Count - 1; i > 0; --i)
+    //     {
+    //         if (nodeList[i] == allNodeCount - 1 || nodeList[i] + 1 == t)
+    //         {
+    //             if (i == 1)
+    //                 return -1;
+    //
+    //             nodeList[i] = 0;
+    //         }
+    //         else
+    //         {
+    //             return ++nodeList[i];
+    //         }
+    //     }
+    //
+    //     return -1;
+    // }
+    
     private static int ChangeNodeForCut(List<int> nodeList, int allNodeCount, int t)
     {
-        if (nodeList.Count < 2) return allNodeCount;
-        for (var i = 0; i < allNodeCount; ++i)
-        {
-            if (!nodeList.Contains(i) && nodeList[nodeList.Count - 1] + 1 != t)
-            {
-                return ++nodeList[nodeList.Count - 1];
-            }
+        if (nodeList.Count < 2) return -1;
 
+        // Iterate from the last element to the first (excluding the first element at index 0)
+        for (var i = nodeList.Count - 1; i > 0; --i)
+        {
+            // Try to increment the current node's value
+            while (++nodeList[i] < allNodeCount)
+            {
+                // Ensure the new value is not equal to `t` and is not already in the list
+                if (nodeList[i] != t && !nodeList.Take(i).Contains(nodeList[i]))
+                {
+                    // Reset all elements to the right of `i` to their initial valid minimum values
+                    for (var j = i + 1; j < nodeList.Count; j++)
+                    {
+                        nodeList[j] = 0; // Start with 0 to find the next valid increment
+                        while (nodeList[j] < allNodeCount)
+                        {
+                            if (nodeList[j] != t && !nodeList.Take(j).Contains(nodeList[j]))
+                                break;
+                            nodeList[j]++;
+                        }
+
+                        // If no valid value was found for nodeList[j], return -1
+                        if (nodeList[j] >= allNodeCount) return -1;
+                    }
+
+                    return nodeList[i]; // Return the updated value at `i` to indicate a successful change
+                }
+            }
+            
+            // Reset the current element to 0 when it can't be incremented anymore
+            nodeList[i] = 0;
         }
 
-        return allNodeCount;
+        // If all combinations have been exhausted, return -1
+        return -1;
     }
+
     
-    private static bool AddNodeForCut(List<int> nodeList, int allNodeCount, int t)
+    private static bool AddNodeForCut(ref List<int> nodeList, int allNodeCount, int t, ref List<int> tempNodeList)
     {
+        nodeList = tempNodeList.ToList();
+        
         if (nodeList.Count == allNodeCount - 1)
             return true;
         
@@ -153,9 +204,11 @@ public class GomoryHuAlgorithm
         {
             if (nodeList.Contains(i) || i == t) continue;
             nodeList.Add(i);
+            tempNodeList = nodeList.ToList();
             break;
         }
         
         return false;
     }
+    
 }
