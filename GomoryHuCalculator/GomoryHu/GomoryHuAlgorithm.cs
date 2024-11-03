@@ -5,16 +5,15 @@ namespace Gomory_HuCalculator.GomoryHu;
 public class GomoryHuAlgorithm
 {
     private int [,] _weightMatrix;
-    private bool[] _markedNodes;
     private List<List<int>> _treeNodes;
     private List<List<List<int>>> _treePaths;
+    private List<int> _treeFlow;
     
     public GomoryHuAlgorithm(int[,] weightMatrix)
     {
         var nodeCount = weightMatrix.GetLength(0);
         
         _weightMatrix = weightMatrix;
-        _markedNodes = new bool[nodeCount];
 
         _treeNodes = [];
         var tempList = new List<int>();
@@ -25,6 +24,7 @@ public class GomoryHuAlgorithm
         _treeNodes.Add(tempList);
 
         _treePaths = [];
+        _treeFlow = [];
     }
     
     public void Solve()
@@ -35,7 +35,7 @@ public class GomoryHuAlgorithm
            if (stop)
                break;
 
-           var sublist = _treeNodes[0].ToList();
+           var sublist = _treeNodes.First(sublist => sublist.Count >= 2);
            var sublistIndex = 0;
            for (var i = 1; i < _treeNodes.Count; i++)
            {
@@ -78,33 +78,121 @@ public class GomoryHuAlgorithm
             }
         } while(nodeList.Count <= allNodeCount - 1 && !last);
 
-        if (minNodeList.Count == allNodeCount - 1)
+        // Opposite to minNodeList
+        var otherMinNodeList = new List<int>();
+        for (var i = 0; i < allNodeCount; i++)
         {
-            minNodeList.Clear();
-            minNodeList.Add(t);
+            if(minNodeList.Contains(i)) continue;
+            otherMinNodeList.Add(i);
         }
-
-        a = minNodeList;
+        
+        a = [];
         b = [];
         sum = minFlowValue;
         
+        if (minNodeList.Count == allNodeCount - 1 || otherMinNodeList.All(node => node == t || 
+                _treeNodes.Any(list => list.SequenceEqual([node]))))
+        {
+            b = minNodeList;
+            a = otherMinNodeList;
+        }
+        else
+        {
+            a = minNodeList;
+            b = otherMinNodeList;
+        }
+    }
+    
+    private void FillOtherCut(List<int> initialNodeList, List<int> chosenNodeList, List<int> otherNodeList)
+    {
         var initialNodeListEnumerator = initialNodeList.GetEnumerator();
         while (initialNodeListEnumerator.MoveNext())
         {
-            if(!a.Contains(initialNodeListEnumerator.Current))
-                b.Add(initialNodeListEnumerator.Current);
+            if(!chosenNodeList.Contains(initialNodeListEnumerator.Current))
+                otherNodeList.Add(initialNodeListEnumerator.Current);
         }
     }
     
     private void UpdateTree(int sublistIndex, List<int> a, List<int> b, int sum)
     {
-        _treeNodes.RemoveAt(sublistIndex);
-        _treeNodes.Insert(sublistIndex, a);
-        _treeNodes.Insert(sublistIndex, b);
+        var sublist = _treeNodes[sublistIndex].ToList();
         
-        _treePaths.Insert(sublistIndex, new List<List<int>>{});
+        _treeNodes = _treeNodes
+            .Where(nodeList => !nodeList.SequenceEqual(sublist))
+            .ToList();
+        
+        _treeNodes.AddRange(new List<List<int>>{a.Intersect(sublist).ToList(), b.Intersect(sublist).ToList()});
+        
+        PathUpdate(sublist, a, b);
+        _treePaths.Add([a.Intersect(sublist).ToList(), b.Intersect(sublist).ToList()]);
     }
-    
+
+    private void PathUpdate(List<int> sublist, List<int> a, List<int> b)
+    {
+        for (var i = 0; i < _treeNodes.Count; i++)
+        {
+            var sublistTreeNode = new List<List<int>>{sublist, _treeNodes[i]};
+            var pathToChangeIndex = _treePaths
+                .FindIndex(treePath => CompareTreePath(treePath, sublistTreeNode));
+            
+            if (pathToChangeIndex == -1) continue;
+
+            if (_treeNodes[i].All(a.Contains))
+            {
+                _treePaths[pathToChangeIndex] = [a.Intersect(sublist).ToList(), _treeNodes[i]];
+            }
+
+            if (_treeNodes[i].All(b.Contains))
+            {
+                _treePaths[pathToChangeIndex] = [b.Intersect(sublist).ToList(), _treeNodes[i]];
+            }
+        }
+    }
+
+    private static bool CompareTreePath(List<List<int>> treePath, List<List<int>> sublistTreeNode)
+    {
+        if (treePath.Count != sublistTreeNode.Count) return false;
+
+        var swap = false;
+        for (var i = 0; i < treePath.Count; i++)
+        {
+            if (treePath[i].Count != sublistTreeNode[i].Count)
+            {
+                swap = true;
+                break;
+            }
+
+            for (var j = 0; j < treePath[i].Count; j++)
+            {
+                if (treePath[i][j] != sublistTreeNode[i][j]) return false;
+            }
+        }
+
+        // Try to swap
+        if (!swap) return true;
+
+        var swappingList = new List<List<int>>();
+        for (var i = 0; i < treePath.Count; i++)
+        {
+            swappingList.Add(sublistTreeNode[i]);
+        }
+
+        swappingList.Reverse();
+
+        for (var i = 0; i < treePath.Count; i++)
+        {
+            if (treePath[i].Count != swappingList[i].Count) return false;
+
+            for (var j = 0; j < treePath[i].Count; j++)
+            {
+                if (treePath[i][j] != swappingList[i][j]) return false;
+            }
+        }
+
+
+        return true;
+    }
+
     // Utility functions
     private static void ChooseElementsToCut(List<int> nodes, out int s, out int t)
     {
@@ -210,5 +298,6 @@ public class GomoryHuAlgorithm
         
         return false;
     }
-    
+
+   
 }
